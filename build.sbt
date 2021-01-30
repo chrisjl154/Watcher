@@ -2,14 +2,13 @@ name := "Watcher"
 
 version := "0.1"
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.13.4"
 
 resolvers ++= Seq(
   Classpaths.typesafeReleases,
   "confluent" at "https://packages.confluent.io/maven/",
   Resolver.mavenLocal
 )
-scalacOptions += "-Ypartial-unification"
 lazy val root = (project in file("."))
   .settings(
     organization := "com.chris",
@@ -25,7 +24,9 @@ lazy val root = (project in file("."))
       Dependencies.Testing.scalaTest,
       Dependencies.Finchx.core,
       Dependencies.Finchx.circe,
-      Dependencies.Finchx.test
+      Dependencies.Finchx.test,
+      Dependencies.Fs2.fs2Core,
+      Dependencies.Fs2.fs2Kafka
     )
   )
 

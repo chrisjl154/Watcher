@@ -50,4 +50,11 @@ object Dependencies {
     val specs2 = "org.tpolecat" %% "doobie-specs2" % doobieVersion
   }
 
+  object Fs2 {
+    val fs2CoreVersion = "2.5.0"
+    val fs2KafkaVersion = "1.3.1"
+    val fs2Core = "co.fs2" %% "fs2-core" % fs2CoreVersion
+    val fs2Kafka = "com.github.fd4s" %% "fs2-kafka" % fs2KafkaVersion
+  }
+
 }

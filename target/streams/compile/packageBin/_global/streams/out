@@ -1,0 +1,27 @@
+[0m[[0m[0mdebug[0m] [0m[0mPackaging /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/watcher_2.13-0.1.jar ...[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	Main$.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/Main$.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	config[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/config[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	config/Config$.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/config/Config$.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	config/Config.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/config/Config.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application.conf[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application.conf[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application/Application$anon$exportedReader$macro$16$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application/Application$anon$exportedReader$macro$16$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application/Application$anon$exportedReader$macro$16$1$anon$macro$9$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application/Application$anon$exportedReader$macro$16$1$anon$macro$9$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application/Application$anon$exportedReader$macro$16$1$anon$macro$11$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application/Application$anon$exportedReader$macro$16$1$anon$macro$11$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application/Application.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application/Application.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	application/Application$anon$exportedReader$macro$16$1$$anon$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/application/Application$anon$exportedReader$macro$16$1$$anon$1.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	Main.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/chris/Documents/University/Dissertation/Code/Watcher/target/scala-2.13/classes/Main.class[0m[0J
+[0m[[0m[0mdebug[0m] [0m[0mDone packaging.[0m[0J

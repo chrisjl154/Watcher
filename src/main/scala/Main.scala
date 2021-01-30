@@ -8,4 +8,5 @@ object Main extends IOApp {
   implicit val parallel: Parallel[IO] = IO.ioParallel
 
   override def run(args: List[String]): IO[ExitCode] = new Application().execute()
+
 }
