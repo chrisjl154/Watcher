@@ -2,7 +2,7 @@
 *.log
 project/project/*
 project/target/*
-.target/*
+target/*
 .idea/*
 out/*
 
