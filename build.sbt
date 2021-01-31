@@ -22,9 +22,9 @@ lazy val root = (project in file("."))
       Dependencies.Logging.logbackClassic,
       Dependencies.Circe.circeParser,
       Dependencies.Testing.scalaTest,
-      Dependencies.Finchx.core,
-      Dependencies.Finchx.circe,
-      Dependencies.Finchx.test,
+      Dependencies.Http4s.http4sBlaze,
+      Dependencies.Http4s.http4sBlazeClient,
+      Dependencies.Http4s.http4sDsl,
       Dependencies.Fs2.fs2Core,
       Dependencies.Fs2.fs2Kafka
     )
