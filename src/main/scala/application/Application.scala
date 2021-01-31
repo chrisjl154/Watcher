@@ -6,17 +6,18 @@ import domain.Target
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._ //required
+import pureconfig.generic.auto._
 import stream.HttpApplicationMetricWatchStream
 
 import java.util.concurrent.Executors
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 class Application()(implicit
     ec: ExecutionContext,
     cs: ContextShift[IO],
     timer: Timer[IO]
 ) {
+  //TODO: Remove, this is here simply for testing purposes until a proper test env is created
   private val targets = Seq[Target](
     Target("Chris"),
     Target("Nikita"),
@@ -27,11 +28,10 @@ class Application()(implicit
 
   def execute(): IO[ExitCode] = {
     val config = loadConfig
-    val httpExecutionContext = ExecutionContext.fromExecutor(
-      Executors.newFixedThreadPool(config.httpConfig.maxConcurrentRequests)
-    )
 
-    withBlazeClient(httpExecutionContext) { client =>
+    withBlazeClient(
+      httpExecutionContext(config.httpConfig.maxConcurrentRequests)
+    ) { client =>
       for {
         res <- HttpApplicationMetricWatchStream(
           config,
@@ -41,6 +41,13 @@ class Application()(implicit
       } yield res
     }
   }
+
+  private def httpExecutionContext(
+      maxConcurrentRequests: Int
+  ): ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(
+      Executors.newFixedThreadPool(maxConcurrentRequests)
+    )
 
   private def withBlazeClient(
       executionContext: ExecutionContext
