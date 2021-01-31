@@ -1,5 +1,7 @@
 package config
 
-case class Config(example: String, httpApplicationMetricConfig: HttpApplicationMetricConfig)
+case class Config(example: String, applicationMetricProcessingConfig: ApplicationMetricProcessingConfig, httpConfig: HttpConfig)
 
-case class HttpApplicationMetricConfig(parallelismMax: Int, limitSeconds: Int)
+case class HttpConfig(host: String, port: String, maxConcurrentRequests: Int)
+
+case class ApplicationMetricProcessingConfig(streamParallelismMax: Int, streamSleepTime: Int)
