@@ -6,7 +6,7 @@ import domain.Target
 import org.slf4j.{Logger, LoggerFactory}
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-import stream.HttpMetricWatchStream
+import stream.HttpApplicationMetricWatchStream
 
 import scala.concurrent.ExecutionContext
 
@@ -27,7 +27,7 @@ class Application()(implicit
 
   def execute(): IO[ExitCode] =
     for {
-      res <- new HttpMetricWatchStream().runForever(targets)
+      _ <- new HttpApplicationMetricWatchStream(loadConfig.httpApplicationMetricConfig).runForever(targets)
       exit = ExitCode.Success
     } yield exit
 

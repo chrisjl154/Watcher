@@ -1,13 +1,14 @@
 package stream
 import domain.Target
 import cats.effect.{ContextShift, Async, Timer, ExitCode, IO, Sync}
+import cats.syntax._
+import config.HttpApplicationMetricConfig
 import fs2.Stream
 import org.slf4j.{Logger, LoggerFactory}
+import scala.concurrent.duration._
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
-
-class HttpMetricWatchStream(implicit
+class HttpApplicationMetricWatchStream(config: HttpApplicationMetricConfig)(
+    implicit
     val cs: ContextShift[IO],
     timer: Timer[IO],
     sync: Sync[IO],
@@ -20,9 +21,9 @@ class HttpMetricWatchStream(implicit
     Stream
       .emits(watchList)
       .covary[IO]
-      .repeat
-      .parEvalMapUnordered(20)(process)
-      .map(validate)
+      .parEvalMapUnordered(config.parallelismMax)(process)
+      .parEvalMapUnordered(config.parallelismMax)(validate)
+      .repeat.metered(config.limitSeconds.seconds)
       .compile
       .drain
 
@@ -31,8 +32,8 @@ class HttpMetricWatchStream(implicit
     IO.pure(Right(target.value))
   }
 
-  private def validate(res: Either[String, String]): Option[String] = {
+  private def validate(res: Either[String, String]): IO[Option[String]] = {
     log.info(s"Some ${res}")
-    res.toOption
+    IO.pure(res.toOption)
   }
 }
