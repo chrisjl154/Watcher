@@ -34,11 +34,11 @@ object Dependencies {
     val circeParser = "io.circe" %% "circe-parser" % circeVersion
   }
 
-  object Finchx {
-    val finchVersion = "0.32.1"
-    val core = "com.github.finagle" %% "finchx-core" % finchVersion
-    val circe = "com.github.finagle" %% "finchx-circe" % finchVersion
-    val test = "com.github.finagle" %% "finchx-test" % finchVersion
+  object Http4s {
+    val http4sVersion = "0.21.16"
+    val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
+    val http4sBlaze = "org.http4s" %% "http4s-blaze-server" % http4sVersion
+    val http4sBlazeClient = "org.http4s" %% "http4s-blaze-client" % http4sVersion
   }
 
   object Doobie {

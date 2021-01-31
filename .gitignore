@@ -5,4 +5,4 @@ project/target/*
 target/*
 .idea/*
 out/*
-
+.bsp/
