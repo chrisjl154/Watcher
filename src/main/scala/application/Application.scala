@@ -2,12 +2,12 @@ package application
 
 import config.Config
 import cats.effect.{Timer, IO, ExitCode, ContextShift}
-import domain.Target
+import domain.PrometheusQuery
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-import stream.HttpApplicationMetricWatchStream
+import stream.PrometheusMetricWatchStream
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -18,12 +18,12 @@ class Application()(implicit
     timer: Timer[IO]
 ) {
   //TODO: Remove, this is here simply for testing purposes until a proper test env is created
-  private val targets = Seq[Target](
-    Target("Chris"),
-    Target("Nikita"),
-    Target("Lara"),
-    Target("Alex"),
-    Target("Elle")
+  private val targets = Seq[PrometheusQuery](
+    PrometheusQuery("Chris"),
+    PrometheusQuery("Nikita"),
+    PrometheusQuery("Lara"),
+    PrometheusQuery("Alex"),
+    PrometheusQuery("Elle")
   )
 
   def execute(): IO[ExitCode] = {
@@ -33,7 +33,7 @@ class Application()(implicit
       httpExecutionContext(config.httpConfig.maxConcurrentRequests)
     ) { client =>
       for {
-        res <- HttpApplicationMetricWatchStream(
+        res <- PrometheusMetricWatchStream(
           config,
           client
         ).runForever(targets)
