@@ -6,23 +6,23 @@ import config.{ApplicationMetricProcessingConfig, Config}
 import fs2.Stream
 import org.http4s.client.Client
 import org.slf4j.{Logger, LoggerFactory}
-import web.HttpPrometheusMetricClient
+import web.HttpPrometheusPrometheusMetricClient
 
 import scala.concurrent.duration._
 
 class PrometheusMetricWatchStream(
     streamConfig: ApplicationMetricProcessingConfig,
-    metricClient: HttpPrometheusMetricClient
+    metricClient: HttpPrometheusPrometheusMetricClient
 )(implicit
     cs: ContextShift[IO],
     timer: Timer[IO],
     sync: Sync[IO],
     async: Async[IO]
-) {
+) extends MetricWatchStream {
   val log: Logger =
     LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getName)
 
-  def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
+  override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
     Stream
       .emits(watchList)
       .covary[IO]
@@ -49,7 +49,8 @@ class PrometheusMetricWatchStream(
 }
 
 object PrometheusMetricWatchStream {
-  def apply(config: Config, metricClient: HttpPrometheusMetricClient)(implicit
+  def apply(config: Config, metricClient: HttpPrometheusPrometheusMetricClient)(
+      implicit
       cs: ContextShift[IO],
       timer: Timer[IO],
       sync: Sync[IO],
