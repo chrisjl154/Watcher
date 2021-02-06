@@ -1,11 +1,16 @@
 package web
+import domain._
 import cats.effect.{IO, ContextShift}
 import org.http4s.client._
 import config.PrometheusConfig
 import domain.{MetricTarget, PrometheusQueryResult}
 import io.circe.generic.auto._
 import io.circe.syntax._
-import org.slf4j.{LoggerFactory, Logger}
+import cats.implicits._
+import io.circe.parser._
+import org.http4s.Uri.RegName
+import org.http4s.{Query, Uri}
+import org.slf4j.{Logger, LoggerFactory}
 
 class HttpPrometheusMetricClient(
     prometheusConfig: PrometheusConfig,
@@ -15,33 +20,52 @@ class HttpPrometheusMetricClient(
 ) {
   val log: Logger =
     LoggerFactory.getLogger(HttpPrometheusMetricClient.getClass.getName)
-  val prometheusApiEndpoint = "api/v1/query"
 
   def getMetricValue(
-                      query: MetricTarget
-                    ): IO[Either[String, PrometheusQueryResult]] =
+      query: MetricTarget
+  ): IO[Either[String, PrometheusQueryResult]] =
     blazeClient
       .expect[String](
-        s"http://${prometheusConfig.host}:${prometheusConfig.port}/${prometheusApiEndpoint}?query=${query.prometheusQueryString}"
+        generateHttp4sUri(
+          prometheusConfig.host,
+          prometheusConfig.port,
+          prometheusConfig.apiEndpoint,
+          Map[String, Seq[String]](
+            "query" -> Seq[String](query.prometheusQueryString)
+          )
+        )
       )
       .redeemWith(
         ex =>
-          IO {
-            log.error(s"Error with query ${query.prometheusQueryString}")
-            log.error(ex.getMessage)
+          IO(
             Left(ex.getMessage)
-          }, //TODO: This feels messy, is there a way to clean this up?
+          ), //TODO: This feels messy, is there a way to clean this up?
         res => IO(decodePrometheusResponse(res))
       )
 
+  private def generateHttp4sUri(
+      host: String,
+      port: Int,
+      apiEndpoint: String,
+      queryString: Map[String, Seq[String]]
+  ): Uri =
+    Uri(
+      Option(Uri.Scheme.http),
+      Option(
+        Uri.Authority(
+          None,
+          RegName(host),
+          Option(port)
+        )
+      ),
+      apiEndpoint,
+      Query.fromMap(queryString),
+      None
+    )
   private def decodePrometheusResponse(
       resp: String
   ): Either[String, PrometheusQueryResult] =
-    resp.asJson
-      .as[PrometheusQueryResult]
-      .toOption
-      .toRight[String]("Error decoding result from query to Prometheus")
-
+    decode(resp)(prometheusQueryResultDecoder).leftMap(_.getMessage)
 }
 
 object HttpPrometheusMetricClient {

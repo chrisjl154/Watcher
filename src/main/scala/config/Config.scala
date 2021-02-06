@@ -13,4 +13,4 @@ case class ApplicationMetricProcessingConfig(
     streamSleepTime: Int
 )
 
-case class PrometheusConfig(host: String, port: String)
+case class PrometheusConfig(host: String, port: Int, apiEndpoint: String)

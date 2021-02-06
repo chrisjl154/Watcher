@@ -34,16 +34,16 @@ class PrometheusMetricWatchStream(
       .drain
 
   private def process(
-                       query: MetricTarget
+      query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
-    log.debug(s"Processing query ${query} in stream")
+    log.info(s"Processing query ${query} in stream")
     metricClient.getMetricValue(query)
   }
 
   private def validate(
       res: Either[String, PrometheusQueryResult]
   ): IO[Option[PrometheusQueryResult]] = {
-    log.debug(s"Validating query response ${res}")
+    log.info(s"Validating query response ${res}")
     IO.pure(res.toOption)
   }
 }
