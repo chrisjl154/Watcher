@@ -5,7 +5,7 @@ import cats.syntax._
 import config.{ApplicationMetricProcessingConfig, Config}
 import fs2.Stream
 import org.slf4j.{Logger, LoggerFactory}
-import web.{HttpPrometheusPrometheusMetricClient, PrometheusMetricClient}
+import web.PrometheusMetricClient
 
 import scala.concurrent.duration._
 
@@ -22,15 +22,19 @@ class PrometheusMetricWatchStream(
     LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getName)
 
   override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
+    prometheusStream(watchList).repeat
+      .metered(streamConfig.streamSleepTime.seconds)
+      .compile
+      .drain
+
+  private[stream] def prometheusStream(
+      watchList: Seq[MetricTarget]
+  ): Stream[IO, Option[PrometheusQueryResult]] =
     Stream
       .emits(watchList)
       .covary[IO]
       .parEvalMapUnordered(streamConfig.streamParallelismMax)(process)
       .parEvalMapUnordered(streamConfig.streamParallelismMax)(validate)
-      .repeat
-      .metered(streamConfig.streamSleepTime.seconds)
-      .compile
-      .drain
 
   private def process(
       query: MetricTarget
@@ -48,8 +52,7 @@ class PrometheusMetricWatchStream(
 }
 
 object PrometheusMetricWatchStream {
-  def apply(config: Config, metricClient: HttpPrometheusPrometheusMetricClient)(
-      implicit
+  def apply(config: Config, metricClient: PrometheusMetricClient)(implicit
       cs: ContextShift[IO],
       timer: Timer[IO],
       sync: Sync[IO],
