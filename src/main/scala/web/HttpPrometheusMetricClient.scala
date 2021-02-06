@@ -1,24 +1,79 @@
 package web
+import domain._
 import cats.effect.{IO, ContextShift}
 import org.http4s.client._
-import config.HttpConfig
+import config.PrometheusConfig
+import domain.{MetricTarget, PrometheusQueryResult}
+import io.circe.generic.auto._
+import io.circe.syntax._
+import cats.implicits._
+import io.circe.parser._
+import org.http4s.Uri.RegName
+import org.http4s.{Query, Uri}
+import org.slf4j.{Logger, LoggerFactory}
 
-class HttpPrometheusMetricClient(conf: HttpConfig, blazeClient: Client[IO])(
-    implicit val cs: ContextShift[IO]
-) extends MetricClient {
-  override def getMetricValue: IO[Either[String, String]] = {
+class HttpPrometheusMetricClient(
+    prometheusConfig: PrometheusConfig,
+    blazeClient: Client[IO]
+)(implicit
+    val cs: ContextShift[IO]
+) {
+  val log: Logger =
+    LoggerFactory.getLogger(HttpPrometheusMetricClient.getClass.getName)
+
+  def getMetricValue(
+      query: MetricTarget
+  ): IO[Either[String, PrometheusQueryResult]] =
     blazeClient
-      .expect[String](s"${conf.host}:${conf.port}/")
-      .redeemWith(
-        ex => IO.pure(Left(ex.getMessage)),
-        res => IO.pure(Right(res))
+      .expect[String](
+        generateHttp4sUri(
+          prometheusConfig.host,
+          prometheusConfig.port,
+          prometheusConfig.apiEndpoint,
+          Map[String, Seq[String]](
+            "query" -> Seq[String](query.prometheusQueryString)
+          )
+        )
       )
-  }
+      .redeemWith(
+        ex =>
+          IO(
+            Left(ex.getMessage)
+          ), //TODO: This feels messy, is there a way to clean this up?
+        res => IO(decodePrometheusResponse(res))
+      )
+
+  private def generateHttp4sUri(
+      host: String,
+      port: Int,
+      apiEndpoint: String,
+      queryString: Map[String, Seq[String]]
+  ): Uri =
+    Uri(
+      Option(Uri.Scheme.http),
+      Option(
+        Uri.Authority(
+          None,
+          RegName(host),
+          Option(port)
+        )
+      ),
+      apiEndpoint,
+      Query.fromMap(queryString),
+      None
+    )
+  private def decodePrometheusResponse(
+      resp: String
+  ): Either[String, PrometheusQueryResult] =
+    decode(resp)(prometheusQueryResultDecoder).leftMap(_.getMessage)
 }
 
 object HttpPrometheusMetricClient {
-  def apply(conf: HttpConfig, blazeClient: Client[IO])(implicit
+  def apply(
+      prometheusConfig: PrometheusConfig,
+      blazeClient: Client[IO]
+  )(implicit
       cs: ContextShift[IO]
   ): HttpPrometheusMetricClient =
-    new HttpPrometheusMetricClient(conf, blazeClient)
+    new HttpPrometheusMetricClient(prometheusConfig, blazeClient)
 }
