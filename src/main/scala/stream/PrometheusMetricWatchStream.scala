@@ -1,5 +1,5 @@
 package stream
-import domain.{PrometheusQueryResult, PrometheusQuery}
+import domain.{PrometheusQueryResult, MetricTarget}
 import cats.effect.{ContextShift, Async, Timer, IO, Sync}
 import cats.syntax._
 import config.{ApplicationMetricProcessingConfig, Config}
@@ -22,7 +22,7 @@ class PrometheusMetricWatchStream(
   val log: Logger =
     LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getName)
 
-  def runForever(watchList: Seq[PrometheusQuery]): IO[Unit] =
+  def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
     Stream
       .emits(watchList)
       .covary[IO]
@@ -34,7 +34,7 @@ class PrometheusMetricWatchStream(
       .drain
 
   private def process(
-      query: PrometheusQuery
+                       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
     log.debug(s"Processing query ${query} in stream")
     metricClient.getMetricValue(query)

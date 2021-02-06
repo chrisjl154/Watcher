@@ -2,9 +2,10 @@ package web
 import cats.effect.{IO, ContextShift}
 import org.http4s.client._
 import config.PrometheusConfig
-import domain.{PrometheusQueryResult, PrometheusQuery}
+import domain.{MetricTarget, PrometheusQueryResult}
 import io.circe.generic.auto._
 import io.circe.syntax._
+import org.slf4j.{LoggerFactory, Logger}
 
 class HttpPrometheusMetricClient(
     prometheusConfig: PrometheusConfig,
@@ -12,21 +13,25 @@ class HttpPrometheusMetricClient(
 )(implicit
     val cs: ContextShift[IO]
 ) {
-  val prometheusApiEndpoint =  "api/v1/query"
+  val log: Logger =
+    LoggerFactory.getLogger(HttpPrometheusMetricClient.getClass.getName)
+  val prometheusApiEndpoint = "api/v1/query"
 
   def getMetricValue(
-      query: PrometheusQuery
-  ): IO[Either[String, PrometheusQueryResult]] =
+                      query: MetricTarget
+                    ): IO[Either[String, PrometheusQueryResult]] =
     blazeClient
       .expect[String](
-        s"http://${prometheusConfig.host}:${prometheusConfig.port}/${prometheusApiEndpoint}?query=${query}"
+        s"http://${prometheusConfig.host}:${prometheusConfig.port}/${prometheusApiEndpoint}?query=${query.prometheusQueryString}"
       )
       .redeemWith(
         ex =>
-          IO.pure(
+          IO {
+            log.error(s"Error with query ${query.prometheusQueryString}")
+            log.error(ex.getMessage)
             Left(ex.getMessage)
-          ), //TODO: This feels messy, is there a way to clean this up?
-        res => IO (decodePrometheusResponse(res))
+          }, //TODO: This feels messy, is there a way to clean this up?
+        res => IO(decodePrometheusResponse(res))
       )
 
   private def decodePrometheusResponse(
