@@ -1,7 +1,6 @@
 package config
 
 case class Config(
-    example: String,
     applicationMetricProcessingConfig: ApplicationMetricProcessingConfig,
     httpConfig: HttpConfig,
     prometheusConfig: PrometheusConfig
