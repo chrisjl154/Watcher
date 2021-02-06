@@ -1,3 +1,3 @@
 package domain
 
-case class  PrometheusQueryResult (resultType: String, result: String)
+case class PrometheusQueryResult(resultType: String, result: String)
