@@ -8,6 +8,7 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import stream.PrometheusMetricWatchStream
+import web.HttpPrometheusMetricClient
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -35,7 +36,7 @@ class Application()(implicit
       for {
         res <- PrometheusMetricWatchStream(
           config,
-          client
+          HttpPrometheusMetricClient(config.prometheusConfig, client)
         ).runForever(targets)
           .map(_ => ExitCode.Success) //TODO: Properly handle fatal errors
       } yield res

@@ -49,7 +49,7 @@ class PrometheusMetricWatchStream(
 }
 
 object PrometheusMetricWatchStream {
-  def apply(config: Config, blazeClient: Client[IO])(implicit
+  def apply(config: Config, metricClient: HttpPrometheusMetricClient)(implicit
       cs: ContextShift[IO],
       timer: Timer[IO],
       sync: Sync[IO],
@@ -57,6 +57,6 @@ object PrometheusMetricWatchStream {
   ): PrometheusMetricWatchStream =
     new PrometheusMetricWatchStream(
       config.applicationMetricProcessingConfig,
-      HttpPrometheusMetricClient(config.prometheusConfig, blazeClient)
+      metricClient
     )
 }
