@@ -1,18 +1,17 @@
 package stream
-import domain.{PrometheusQueryResult, MetricTarget}
+import domain.{MetricTarget, PrometheusQueryResult}
 import cats.effect.{ContextShift, Async, Timer, IO, Sync}
 import cats.syntax._
 import config.{ApplicationMetricProcessingConfig, Config}
 import fs2.Stream
-import org.http4s.client.Client
 import org.slf4j.{Logger, LoggerFactory}
-import web.HttpPrometheusPrometheusMetricClient
+import web.{HttpPrometheusPrometheusMetricClient, PrometheusMetricClient}
 
 import scala.concurrent.duration._
 
 class PrometheusMetricWatchStream(
     streamConfig: ApplicationMetricProcessingConfig,
-    metricClient: HttpPrometheusPrometheusMetricClient
+    metricClient: PrometheusMetricClient
 )(implicit
     cs: ContextShift[IO],
     timer: Timer[IO],
