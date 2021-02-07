@@ -40,14 +40,15 @@ class PrometheusMetricWatchStream(
       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
     log.info(s"Processing query ${query} in stream")
-    metricClient.getMetricValue(query)
+    if (query.name.isEmpty) IO(Left("Invalid query name"))
+    else metricClient.getMetricValue(query)
   }
 
   private def validate(
       res: Either[String, PrometheusQueryResult]
-  ): IO[Option[PrometheusQueryResult]] = {
+  ): IO[Option[PrometheusQueryResult]] = IO{
     log.info(s"Validating query response ${res}")
-    IO.pure(res.toOption)
+    res.toOption
   }
 }
 

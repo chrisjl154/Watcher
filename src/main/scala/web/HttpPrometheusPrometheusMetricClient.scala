@@ -4,10 +4,10 @@ import cats.effect.{IO, ContextShift}
 import org.http4s.client._
 import config.PrometheusConfig
 import domain.{MetricTarget, PrometheusQueryResult}
+import io.circe.parser._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import cats.implicits._
-import io.circe.parser._
 import org.http4s.Uri.RegName
 import org.http4s.{Query, Uri}
 import org.slf4j.{Logger, LoggerFactory}

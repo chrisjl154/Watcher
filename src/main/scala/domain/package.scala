@@ -31,4 +31,10 @@ package object domain {
         valuesCleaned = value.map(_.toString.replace("\"", ""))
       } yield Result(valuesCleaned)
     )
+
+  implicit val metricTargetDecoder: Decoder[MetricTarget] =
+    deriveDecoder
+
+  implicit val metricTargetEncoder: Encoder[MetricTarget] =
+    deriveEncoder
 }

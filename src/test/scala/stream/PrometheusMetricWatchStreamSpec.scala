@@ -23,7 +23,7 @@ class PrometheusMetricWatchStreamSpec
   "PrometheusMetricWatchStream" should {
     "Successfully run through the stream once" when {
       "A valid set of targets are provided" in {
-        val targets = List[MetricTarget](MetricTarget("valid", "", ""))
+        val targets: Seq[MetricTarget] = loadValidTargets
 
         withConfig() { config =>
           withHardcodedPrometheusMetricClient() { metricClient =>
@@ -31,18 +31,30 @@ class PrometheusMetricWatchStreamSpec
               val prometheusStream = stream.prometheusStream(targets).compile
               val result = prometheusStream.toList.unsafeRunSync()
 
-              result mustNot contain (None)
+              result mustNot contain(None)
             }
           }
         }
       }
-      "A valid set of targets are provided along with invalid targets" in {}
-    }
-    "Not stop/fail" when {
-      "Invalid targets are passed" in {}
-      "HTTP requests fail" in {}
-      "Responses cannot be decoded" in {}
+      "A valid set of targets are provided along with invalid targets" in {
+        val validTargets: Seq[MetricTarget] = loadValidTargets
+        val invalidTargets: Seq[MetricTarget] = loadInvalidTargets
 
+        withConfig() { config =>
+          withHardcodedPrometheusMetricClient() { metricClient =>
+            withPrometheusMetricWatchStream(config, metricClient) { stream =>
+              val prometheusStream = stream.prometheusStream(validTargets ++ invalidTargets).compile
+              val result = prometheusStream.toList.unsafeRunSync()
+
+              val succeeded = result.filter(_.isDefined)
+              val failed = result.filterNot(_.isDefined)
+
+              succeeded.size mustEqual 5
+              failed.size mustEqual 4
+            }
+          }
+        }
+      }
     }
   }
 }

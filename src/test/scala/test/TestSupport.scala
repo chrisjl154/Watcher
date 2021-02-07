@@ -1,11 +1,22 @@
 package test
 
 import scala.concurrent.ExecutionContext
-import config.{ApplicationMetricProcessingConfig, Config, HttpConfig, PrometheusConfig}
+import config.{
+  ApplicationMetricProcessingConfig,
+  Config,
+  HttpConfig,
+  PrometheusConfig
+}
 import cats.Parallel
 import web.{HardcodedPrometheusMetricClient, PrometheusMetricClient}
 import cats.effect.{Timer, IO, ContextShift}
+import domain.{MetricTarget, metricTargetDecoder}
 import stream.PrometheusMetricWatchStream
+import io.circe.parser._
+import io.circe.generic.auto._
+import io.circe.syntax._
+
+import scala.io.Source
 
 object TestSupport {
   private implicit val ec: ExecutionContext = ExecutionContext.global
@@ -27,7 +38,8 @@ object TestSupport {
   def withConfig()(f: Config => Unit): Unit = {
     val streamParallelismMax = 10
     val streamSleepTime = 10
-    val applicationMetricProcessingConfig = ApplicationMetricProcessingConfig(streamParallelismMax, streamSleepTime)
+    val applicationMetricProcessingConfig =
+      ApplicationMetricProcessingConfig(streamParallelismMax, streamSleepTime)
 
     val maxConcurrentRequests = 10
     val httpConfig = HttpConfig(maxConcurrentRequests)
@@ -35,7 +47,8 @@ object TestSupport {
     val prometheusHost = "localhost"
     val prometheusPort = 30003
     val prometheusApiEndpoint = "/api/v1/query"
-    val prometheusConfig = PrometheusConfig(prometheusHost, prometheusPort, prometheusApiEndpoint)
+    val prometheusConfig =
+      PrometheusConfig(prometheusHost, prometheusPort, prometheusApiEndpoint)
 
     f(
       Config(
@@ -44,4 +57,33 @@ object TestSupport {
         prometheusConfig
       )
     )
-  }}
+  }
+
+  //TODO: Kind of dirty, should be Ok as this is just for tests but maybe clean this up?
+  def loadValidTargets: Seq[MetricTarget] =
+    Source
+      .fromResource("targetsValid.json")
+      .getLines()
+      .map(decode[MetricTarget](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadValidTargetQueryNames: Seq[String] =
+    Source
+      .fromResource("targetsNameValid.json")
+      .getLines()
+      .map(decode[String](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadInvalidTargets: Seq[MetricTarget] =
+    Source
+      .fromResource("targetsInvalid.json")
+      .getLines()
+      .map(decode[MetricTarget](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+}
