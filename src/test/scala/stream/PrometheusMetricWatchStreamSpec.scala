@@ -23,12 +23,12 @@ class PrometheusMetricWatchStreamSpec
   "PrometheusMetricWatchStream.validate" should {
     "Successfully run through the stream once" when {
       "A valid set of targets are provided" in {
-        val validTargets: Seq[MetricTarget] = loadValidTargets
+        val targets: Seq[MetricTarget] = loadValidTargets
 
         withConfig() { config =>
           withHardcodedPrometheusMetricClient() { metricClient =>
             withPrometheusMetricWatchStream(config, metricClient) { stream =>
-              val prometheusStream = stream.prometheusStream(validTargets).compile
+              val prometheusStream = stream.prometheusStream(targets).compile
               val result = prometheusStream.toList.unsafeRunSync()
 
               result mustNot contain(None)
@@ -47,8 +47,11 @@ class PrometheusMetricWatchStreamSpec
                 stream.prometheusStream(validTargets ++ invalidTargets).compile
               val result = prometheusStream.toList.unsafeRunSync()
 
-              result.size mustEqual 5
-              result.filterNot(_.isDefined).size mustEqual 0
+              val succeeded = result.filter(_.isDefined)
+              val failed = result.filterNot(_.isDefined)
+
+              succeeded.size mustEqual 5
+              failed.size mustEqual 4
             }
           }
         }
