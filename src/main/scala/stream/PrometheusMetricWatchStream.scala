@@ -1,55 +1,63 @@
 package stream
-import domain.{PrometheusQueryResult, MetricTarget}
+import domain.{MetricTarget, PrometheusQueryResult}
 import cats.effect.{ContextShift, Async, Timer, IO, Sync}
 import cats.syntax._
 import config.{ApplicationMetricProcessingConfig, Config}
 import fs2.Stream
-import org.http4s.client.Client
 import org.slf4j.{Logger, LoggerFactory}
-import web.HttpPrometheusMetricClient
+import web.PrometheusMetricClient
 
 import scala.concurrent.duration._
 
 class PrometheusMetricWatchStream(
     streamConfig: ApplicationMetricProcessingConfig,
-    metricClient: HttpPrometheusMetricClient
+    metricClient: PrometheusMetricClient
 )(implicit
     cs: ContextShift[IO],
     timer: Timer[IO],
     sync: Sync[IO],
     async: Async[IO]
-) {
+) extends MetricWatchStream {
   val log: Logger =
     LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getName)
 
-  def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
-    Stream
-      .emits(watchList)
-      .covary[IO]
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(process)
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(validate)
-      .repeat
+  override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
+    prometheusStream(watchList).repeat
       .metered(streamConfig.streamSleepTime.seconds)
       .compile
       .drain
 
-  private def process(
+  private[stream] def prometheusStream(
+      watchList: Seq[MetricTarget]
+  ): Stream[IO, Option[PrometheusQueryResult]] =
+    Stream
+      .emits(watchList)
+      .covary[IO]
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(processMetricTarget)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(validateQueryResult)
+
+  private[stream] def processMetricTarget(
       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
     log.info(s"Processing query ${query} in stream")
-    metricClient.getMetricValue(query)
+    if (query.name.isEmpty) IO(Left("Invalid query name"))
+    else metricClient.getMetricValue(query)
   }
 
-  private def validate(
+  private[stream] def validateQueryResult(
       res: Either[String, PrometheusQueryResult]
-  ): IO[Option[PrometheusQueryResult]] = {
-    log.info(s"Validating query response ${res}")
-    IO.pure(res.toOption)
-  }
+  ): IO[Option[PrometheusQueryResult]] =
+    IO {
+      if (res.isLeft)
+        res.left.map(err =>
+          log.error(s"Error when validating Query Result for: $err")
+        )
+      res.toOption
+    }
 }
 
 object PrometheusMetricWatchStream {
-  def apply(config: Config, blazeClient: Client[IO])(implicit
+  def apply(config: Config, metricClient: PrometheusMetricClient)(implicit
       cs: ContextShift[IO],
       timer: Timer[IO],
       sync: Sync[IO],
@@ -57,6 +65,6 @@ object PrometheusMetricWatchStream {
   ): PrometheusMetricWatchStream =
     new PrometheusMetricWatchStream(
       config.applicationMetricProcessingConfig,
-      HttpPrometheusMetricClient(config.prometheusConfig, blazeClient)
+      metricClient
     )
 }

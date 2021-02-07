@@ -4,24 +4,24 @@ import cats.effect.{IO, ContextShift}
 import org.http4s.client._
 import config.PrometheusConfig
 import domain.{MetricTarget, PrometheusQueryResult}
+import io.circe.parser._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import cats.implicits._
-import io.circe.parser._
 import org.http4s.Uri.RegName
 import org.http4s.{Query, Uri}
 import org.slf4j.{Logger, LoggerFactory}
 
-class HttpPrometheusMetricClient(
+class HttpPrometheusPrometheusMetricClient(
     prometheusConfig: PrometheusConfig,
     blazeClient: Client[IO]
 )(implicit
     val cs: ContextShift[IO]
-) {
+) extends PrometheusMetricClient{
   val log: Logger =
-    LoggerFactory.getLogger(HttpPrometheusMetricClient.getClass.getName)
+    LoggerFactory.getLogger(HttpPrometheusPrometheusMetricClient.getClass.getName)
 
-  def getMetricValue(
+  override def getMetricValue(
       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] =
     blazeClient
@@ -68,12 +68,12 @@ class HttpPrometheusMetricClient(
     decode(resp)(prometheusQueryResultDecoder).leftMap(_.getMessage)
 }
 
-object HttpPrometheusMetricClient {
+object HttpPrometheusPrometheusMetricClient {
   def apply(
       prometheusConfig: PrometheusConfig,
       blazeClient: Client[IO]
   )(implicit
       cs: ContextShift[IO]
-  ): HttpPrometheusMetricClient =
-    new HttpPrometheusMetricClient(prometheusConfig, blazeClient)
+  ): HttpPrometheusPrometheusMetricClient =
+    new HttpPrometheusPrometheusMetricClient(prometheusConfig, blazeClient)
 }
