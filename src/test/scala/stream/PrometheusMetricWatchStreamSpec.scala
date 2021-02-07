@@ -2,7 +2,7 @@ package stream
 
 import cats.Parallel
 import cats.effect.{IO, ContextShift}
-import domain.MetricTarget
+import domain.{MetricTarget, PrometheusQueryResult}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
@@ -20,15 +20,15 @@ class PrometheusMetricWatchStreamSpec
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val parallel: Parallel[IO] = IO.ioParallel
 
-  "PrometheusMetricWatchStream" should {
+  "PrometheusMetricWatchStream.validate" should {
     "Successfully run through the stream once" when {
       "A valid set of targets are provided" in {
-        val targets: Seq[MetricTarget] = loadValidTargets
+        val validTargets: Seq[MetricTarget] = loadValidTargets
 
         withConfig() { config =>
           withHardcodedPrometheusMetricClient() { metricClient =>
             withPrometheusMetricWatchStream(config, metricClient) { stream =>
-              val prometheusStream = stream.prometheusStream(targets).compile
+              val prometheusStream = stream.prometheusStream(validTargets).compile
               val result = prometheusStream.toList.unsafeRunSync()
 
               result mustNot contain(None)
@@ -43,14 +43,12 @@ class PrometheusMetricWatchStreamSpec
         withConfig() { config =>
           withHardcodedPrometheusMetricClient() { metricClient =>
             withPrometheusMetricWatchStream(config, metricClient) { stream =>
-              val prometheusStream = stream.prometheusStream(validTargets ++ invalidTargets).compile
+              val prometheusStream =
+                stream.prometheusStream(validTargets ++ invalidTargets).compile
               val result = prometheusStream.toList.unsafeRunSync()
 
-              val succeeded = result.filter(_.isDefined)
-              val failed = result.filterNot(_.isDefined)
-
-              succeeded.size mustEqual 5
-              failed.size mustEqual 4
+              result.size mustEqual 5
+              result.filterNot(_.isDefined).size mustEqual 0
             }
           }
         }

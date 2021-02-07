@@ -30,9 +30,7 @@ class Application()(implicit
   def execute(): IO[ExitCode] = {
     val config = loadConfig
 
-    withBlazeClient(
-      httpExecutionContext(config.httpConfig.maxConcurrentRequests)
-    ) { client =>
+    withBlazeClient(httpExecutionContext(config.httpConfig.maxConcurrentRequests)) { client =>
       for {
         res <- PrometheusMetricWatchStream(
           config,

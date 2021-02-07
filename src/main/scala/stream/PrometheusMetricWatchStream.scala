@@ -33,10 +33,10 @@ class PrometheusMetricWatchStream(
     Stream
       .emits(watchList)
       .covary[IO]
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(process)
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(validate)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(processMetricTarget)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(validateQueryResult)
 
-  private def process(
+  private[stream] def processMetricTarget(
       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
     log.info(s"Processing query ${query} in stream")
@@ -44,12 +44,16 @@ class PrometheusMetricWatchStream(
     else metricClient.getMetricValue(query)
   }
 
-  private def validate(
+  private[stream] def validateQueryResult(
       res: Either[String, PrometheusQueryResult]
-  ): IO[Option[PrometheusQueryResult]] = IO{
-    log.info(s"Validating query response ${res}")
-    res.toOption
-  }
+  ): IO[Option[PrometheusQueryResult]] =
+    IO {
+      if (res.isLeft)
+        res.left.map(err =>
+          log.error(s"Error when validating Query Result for: $err")
+        )
+      res.toOption
+    }
 }
 
 object PrometheusMetricWatchStream {
