@@ -3,7 +3,8 @@ package config
 case class Config(
     applicationMetricProcessingConfig: ApplicationMetricProcessingConfig,
     httpConfig: HttpConfig,
-    prometheusConfig: PrometheusConfig
+    prometheusConfig: PrometheusConfig,
+    targetDefinitions: TargetDefinitions
 )
 
 case class HttpConfig(maxConcurrentRequests: Int)
@@ -14,3 +15,5 @@ case class ApplicationMetricProcessingConfig(
 )
 
 case class PrometheusConfig(host: String, port: Int, apiEndpoint: String)
+
+case class TargetDefinitions(source: String)

@@ -19,7 +19,7 @@ class PrometheusMetricWatchStream(
     async: Async[IO]
 ) extends MetricWatchStream {
   val log: Logger =
-    LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getName)
+    LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getSimpleName)
 
   override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
     prometheusStream(watchList).repeat
@@ -39,7 +39,7 @@ class PrometheusMetricWatchStream(
   private[stream] def processMetricTarget(
       query: MetricTarget
   ): IO[Either[String, PrometheusQueryResult]] = {
-    log.info(s"Processing query ${query} in stream")
+    log.info(s"Processing query \'${query.name}\' in stream")
     if (query.name.isEmpty) IO(Left("Invalid query name"))
     else metricClient.getMetricValue(query)
   }
