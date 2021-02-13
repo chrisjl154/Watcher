@@ -1,16 +1,11 @@
 package test
 
 import scala.concurrent.ExecutionContext
-import config.{
-  ApplicationMetricProcessingConfig,
-  Config,
-  HttpConfig,
-  PrometheusConfig
-}
+import config.{TargetDefinitions, PrometheusConfig, Config, HttpConfig, ApplicationMetricProcessingConfig}
 import cats.Parallel
 import web.{HardcodedPrometheusMetricClient, PrometheusMetricClient}
 import cats.effect.{Timer, IO, ContextShift}
-import domain.{MetricTarget, metricTargetDecoder, MetricTargetCandidate}
+import domain.{MetricTarget, MetricTargetCandidate, metricTargetDecoder}
 import stream.PrometheusMetricWatchStream
 import io.circe.parser._
 import io.circe.generic.auto._
@@ -50,11 +45,15 @@ object TestSupport {
     val prometheusConfig =
       PrometheusConfig(prometheusHost, prometheusPort, prometheusApiEndpoint)
 
+    val targetSource = "metricTargetCandidatesValid.json"
+    val targetConfig = TargetDefinitions(targetSource)
+
     f(
       Config(
         applicationMetricProcessingConfig,
         httpConfig,
-        prometheusConfig
+        prometheusConfig,
+        targetConfig
       )
     )
   }

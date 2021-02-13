@@ -21,8 +21,8 @@ object MetricTargetValidator {
       threshold: String
   ): ValidationResult[MetricTarget] =
     (
-      validateQueryString(prometheusQueryString),
       validateQueryName(name),
+      validateQueryString(prometheusQueryString),
       validateThreshold(threshold)
     ).mapN(MetricTarget)
 
