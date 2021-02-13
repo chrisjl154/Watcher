@@ -20,7 +20,7 @@ class MetricTargetValidatorSpec
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val parallel: Parallel[IO] = IO.ioParallel
 
-  s"${MetricTargetValidator.getClass.getName}" should {
+  s"${MetricTargetValidator.getClass.getSimpleName}" should {
     "Show no validation errors" when {
       "All parameters passed are correct" in {
         val validCandidates = loadMetricTargetCandidatesValid
