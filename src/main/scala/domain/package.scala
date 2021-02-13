@@ -37,4 +37,10 @@ package object domain {
 
   implicit val metricTargetEncoder: Encoder[MetricTarget] =
     deriveEncoder
+
+  implicit val metricTargetCandidateDecoder: Decoder[MetricTargetCandidate] =
+    deriveDecoder
+
+  implicit val metricTargetCandidateEncoder: Encoder[MetricTargetCandidate] =
+    deriveEncoder
 }

@@ -1,0 +1,5 @@
+{"proposedName": "QueryOne", "proposedPrometheusQueryString": "count(something)", "proposedThreshold": "10", "description": "Some valid query"}
+{"proposedName": "QueryTwo", "proposedPrometheusQueryString": "sum(something)", "proposedThreshold": "100", "description": "Some valid query"}
+{"proposedName": "QueryThree", "proposedPrometheusQueryString": "istio_request{app=\"frontend\"}", "proposedThreshold": "100", "description": "Some valid query"}
+{"proposedName": "QueryFour", "proposedPrometheusQueryString": "istio_request_failure{app=\"frontend\"}", "proposedThreshold": "20", "description": "Some valid query"}
+{"proposedName": "QueryFive", "proposedPrometheusQueryString": "istio_p99_latency{app=\"frontend\", destination=\"database\"}", "proposedThreshold": "10000", "description": "Some valid query"}

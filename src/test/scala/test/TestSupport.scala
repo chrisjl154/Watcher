@@ -10,7 +10,7 @@ import config.{
 import cats.Parallel
 import web.{HardcodedPrometheusMetricClient, PrometheusMetricClient}
 import cats.effect.{Timer, IO, ContextShift}
-import domain.{MetricTarget, metricTargetDecoder}
+import domain.{MetricTarget, metricTargetDecoder, MetricTargetCandidate}
 import stream.PrometheusMetricWatchStream
 import io.circe.parser._
 import io.circe.generic.auto._
@@ -62,7 +62,7 @@ object TestSupport {
   //TODO: Kind of dirty, should be Ok as this is just for tests but maybe clean this up?
   def loadValidTargets: Seq[MetricTarget] =
     Source
-      .fromResource("targetsValid.json")
+      .fromResource("metricTargetsValid.json")
       .getLines()
       .map(decode[MetricTarget](_))
       .toSeq
@@ -71,7 +71,7 @@ object TestSupport {
 
   def loadValidTargetQueryNames: Seq[String] =
     Source
-      .fromResource("targetsNameValid.json")
+      .fromResource("metricTargetsNamesValid.json")
       .getLines()
       .map(decode[String](_))
       .toSeq
@@ -80,9 +80,27 @@ object TestSupport {
 
   def loadInvalidTargets: Seq[MetricTarget] =
     Source
-      .fromResource("targetsInvalid.json")
+      .fromResource("metricTargetsInvalid.json")
       .getLines()
       .map(decode[MetricTarget](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadMetricTargetCandidatesValid: Seq[MetricTargetCandidate] =
+    Source
+      .fromResource("metricTargetCandidatesValid.json")
+      .getLines()
+      .map(decode[MetricTargetCandidate](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadMetricTargetCandidatesInvalid: Seq[MetricTargetCandidate] =
+    Source
+      .fromResource("metricTargetCandidatesInvalid.json")
+      .getLines()
+      .map(decode[MetricTargetCandidate](_))
       .toSeq
       .filter(_.isRight)
       .map(item => item.toOption.get)
