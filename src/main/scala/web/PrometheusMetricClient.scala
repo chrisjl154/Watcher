@@ -1,10 +1,11 @@
 package web
 
+import cats.data.EitherT
 import cats.effect.IO
-import domain.{PrometheusQueryResult, MetricTarget}
+import domain.{MetricTarget, PrometheusQueryResult}
 
 trait PrometheusMetricClient {
   def getMetricValue(
       query: MetricTarget
-  ): IO[Either[String, PrometheusQueryResult]]
+  ): EitherT[IO, String, PrometheusQueryResult]
 }

@@ -1,7 +1,15 @@
 package test
 
+import anomaly.AnomalyDetectionEngine
+
 import scala.concurrent.ExecutionContext
-import config.{TargetDefinitions, PrometheusConfig, Config, HttpConfig, ApplicationMetricProcessingConfig}
+import config.{
+  TargetDefinitions,
+  PrometheusConfig,
+  Config,
+  HttpConfig,
+  ApplicationMetricProcessingConfig
+}
 import cats.Parallel
 import web.{HardcodedPrometheusMetricClient, PrometheusMetricClient}
 import cats.effect.{Timer, IO, ContextShift}
@@ -21,14 +29,26 @@ object TestSupport {
 
   def withPrometheusMetricWatchStream(
       config: Config,
-      metricWatchStream: PrometheusMetricClient
+      metricWatchStream: PrometheusMetricClient,
+      anomalyDetectionEngine: AnomalyDetectionEngine
   )(f: PrometheusMetricWatchStream => Unit): Unit =
-    f(PrometheusMetricWatchStream(config, metricWatchStream))
+    f(
+      PrometheusMetricWatchStream(
+        config,
+        metricWatchStream,
+        anomalyDetectionEngine
+      )
+    )
 
   def withHardcodedPrometheusMetricClient()(
       f: PrometheusMetricClient => Unit
   ): Unit =
     f(HardcodedPrometheusMetricClient())
+
+  def withAnomalyDetectionEngine()(
+      f: AnomalyDetectionEngine => Unit
+  ): Unit =
+    f(AnomalyDetectionEngine())
 
   def withConfig()(f: Config => Unit): Unit = {
     val streamParallelismMax = 10
@@ -59,9 +79,18 @@ object TestSupport {
   }
 
   //TODO: Kind of dirty, should be Ok as this is just for tests but maybe clean this up?
-  def loadValidTargets: Seq[MetricTarget] =
+  def loadValidTargetsWithAnomaly: Seq[MetricTarget] =
     Source
-      .fromResource("metricTargetsValid.json")
+      .fromResource("metricTargetsValidWithAnomaly.json")
+      .getLines()
+      .map(decode[MetricTarget](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadValidTargetsNoAnomaly: Seq[MetricTarget] =
+    Source
+      .fromResource("metricTargetsValidNoAnomalies.json")
       .getLines()
       .map(decode[MetricTarget](_))
       .toSeq

@@ -1,5 +1,6 @@
 package application
 
+import anomaly.AnomalyDetectionEngine
 import config.Config
 import cats.syntax._
 import cats.implicits._
@@ -32,9 +33,11 @@ class Application()(implicit
         targets <-
           HardcodedTargetLoader.loadAll(config.targetDefinitions.source)
         validatedTargets = MetricTargetValidator.validateAll(targets)
+        _ = log.info(s"Validated ${validatedTargets.length}/${targets.length} supplied targets")
         res <- PrometheusMetricWatchStream(
           config,
-          HttpPrometheusPrometheusMetricClient(config.prometheusConfig, client)
+          HttpPrometheusPrometheusMetricClient(config.prometheusConfig, client),
+          AnomalyDetectionEngine()
         ).runForever(validatedTargets)
           .map(_ => ExitCode.Success) //TODO: Properly handle fatal errors
       } yield res

@@ -1,7 +1,9 @@
 package stream
-import domain.{MetricTarget, PrometheusQueryResult}
+import anomaly.{AnomalyDetectionEngine, AnomalyMessage}
+import domain.{MetricTarget, MetricTargetAndResultWrapper}
 import cats.effect.{ContextShift, Async, Timer, IO, Sync}
 import cats.syntax._
+import cats.implicits._
 import config.{ApplicationMetricProcessingConfig, Config}
 import fs2.Stream
 import org.slf4j.{Logger, LoggerFactory}
@@ -11,7 +13,8 @@ import scala.concurrent.duration._
 
 class PrometheusMetricWatchStream(
     streamConfig: ApplicationMetricProcessingConfig,
-    metricClient: PrometheusMetricClient
+    metricClient: PrometheusMetricClient,
+    anomalyDetectionEngine: AnomalyDetectionEngine
 )(implicit
     cs: ContextShift[IO],
     timer: Timer[IO],
@@ -19,7 +22,7 @@ class PrometheusMetricWatchStream(
     async: Async[IO]
 ) extends MetricWatchStream {
   val log: Logger =
-    LoggerFactory.getLogger(PrometheusMetricWatchStream.getClass.getSimpleName)
+    LoggerFactory.getLogger(getClass.getSimpleName)
 
   override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
     prometheusStream(watchList).repeat
@@ -29,35 +32,54 @@ class PrometheusMetricWatchStream(
 
   private[stream] def prometheusStream(
       watchList: Seq[MetricTarget]
-  ): Stream[IO, Option[PrometheusQueryResult]] =
+  ): Stream[IO, Option[String]] =
     Stream
       .emits(watchList)
       .covary[IO]
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(processMetricTarget)
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(validateQueryResult)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(retrieveMetrics)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(detectAnomalies)
+      .filter(_.isDefined)
+      .map(_.get)
+      .parEvalMapUnordered(streamConfig.streamParallelismMax)(notifyKafka)
 
-  private[stream] def processMetricTarget(
-      query: MetricTarget
-  ): IO[Either[String, PrometheusQueryResult]] = {
-    log.info(s"Processing query \'${query.name}\' in stream")
-    if (query.name.isEmpty) IO(Left("Invalid query name"))
-    else metricClient.getMetricValue(query)
+  private[stream] def retrieveMetrics(
+      target: MetricTarget
+  ): IO[Option[MetricTargetAndResultWrapper]] = {
+    metricClient
+      .getMetricValue(target)
+      .map { result =>
+        val metricResult =
+          result.data.result.head.value.tail.head.toFloat //TODO: This is not safe. Need to find a workaround
+        MetricTargetAndResultWrapper(target, metricResult)
+      }
+      .leftMap { err =>
+        log.warn(s"Error retrieving metrics for \'${target.name}\': $err")
+        err
+      }
+      .toOption
+      .value
   }
-
-  private[stream] def validateQueryResult(
-      res: Either[String, PrometheusQueryResult]
-  ): IO[Option[PrometheusQueryResult]] =
+  private[stream] def detectAnomalies(
+      resOption: Option[MetricTargetAndResultWrapper]
+  ): IO[Option[AnomalyMessage]] =
     IO {
-      if (res.isLeft)
-        res.left.map(err =>
-          log.error(s"Error when validating Query Result for: $err")
-        )
-      res.toOption
+      resOption.flatMap { res =>
+        anomalyDetectionEngine.detect(res.target, res.result)
+      }
     }
+
+  private[stream] def notifyKafka(
+      message: AnomalyMessage
+  ): IO[Option[String]] =
+    IO(Option("NYI"))
 }
 
 object PrometheusMetricWatchStream {
-  def apply(config: Config, metricClient: PrometheusMetricClient)(implicit
+  def apply(
+      config: Config,
+      metricClient: PrometheusMetricClient,
+      anomalyDetectionEngine: AnomalyDetectionEngine
+  )(implicit
       cs: ContextShift[IO],
       timer: Timer[IO],
       sync: Sync[IO],
@@ -65,6 +87,7 @@ object PrometheusMetricWatchStream {
   ): PrometheusMetricWatchStream =
     new PrometheusMetricWatchStream(
       config.applicationMetricProcessingConfig,
-      metricClient
+      metricClient,
+      anomalyDetectionEngine
     )
 }

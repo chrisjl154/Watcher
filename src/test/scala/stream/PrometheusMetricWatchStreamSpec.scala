@@ -1,5 +1,6 @@
 package stream
 
+import anomaly.AnomalyMessage
 import cats.Parallel
 import cats.effect.{IO, ContextShift}
 import domain.{MetricTarget, PrometheusQueryResult}
@@ -21,37 +22,44 @@ class PrometheusMetricWatchStreamSpec
   private implicit val parallel: Parallel[IO] = IO.ioParallel
 
   "PrometheusMetricWatchStream.validate" should {
-    "Successfully run through the stream once" when {
-      "A valid set of targets are provided" in {
-        val targets: Seq[MetricTarget] = loadValidTargets
+    s"Produce no AnomalyMessages" when {
+      "A valid set of targets are provided that do not violate thresholds" in {
+        val targets: Seq[MetricTarget] = loadValidTargetsNoAnomaly
 
         withConfig() { config =>
-          withHardcodedPrometheusMetricClient() { metricClient =>
-            withPrometheusMetricWatchStream(config, metricClient) { stream =>
-              val prometheusStream = stream.prometheusStream(targets).compile
-              val result = prometheusStream.toList.unsafeRunSync()
+          withAnomalyDetectionEngine() { engine =>
+            withHardcodedPrometheusMetricClient() { metricClient =>
+              withPrometheusMetricWatchStream(config, metricClient, engine) {
+                stream =>
+                  val prometheusStream =
+                    stream.prometheusStream(targets).compile
+                  val result = prometheusStream.toList.unsafeRunSync()
 
-              result mustNot contain(None)
+                  result.length mustEqual (0)
+              }
             }
           }
         }
       }
+    }
+    s"Produce AnomalyMessages" when {
       "A valid set of targets are provided along with invalid targets" in {
-        val validTargets: Seq[MetricTarget] = loadValidTargets
+        val validTargets: Seq[MetricTarget] = loadValidTargetsWithAnomaly
         val invalidTargets: Seq[MetricTarget] = loadInvalidTargets
 
         withConfig() { config =>
-          withHardcodedPrometheusMetricClient() { metricClient =>
-            withPrometheusMetricWatchStream(config, metricClient) { stream =>
-              val prometheusStream =
-                stream.prometheusStream(validTargets ++ invalidTargets).compile
-              val result = prometheusStream.toList.unsafeRunSync()
+          withAnomalyDetectionEngine() { engine =>
+            withHardcodedPrometheusMetricClient() { metricClient =>
+              withPrometheusMetricWatchStream(config, metricClient, engine) {
+                stream =>
+                  val prometheusStream =
+                    stream
+                      .prometheusStream(validTargets ++ invalidTargets)
+                      .compile
+                  val result = prometheusStream.toList.unsafeRunSync()
 
-              val succeeded = result.filter(_.isDefined)
-              val failed = result.filterNot(_.isDefined)
-
-              succeeded.size mustEqual 5
-              failed.size mustEqual 4
+                  result.size mustEqual 1
+              }
             }
           }
         }
