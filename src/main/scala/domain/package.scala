@@ -2,6 +2,8 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{DecodingFailure, Decoder, Encoder}
 
 package object domain {
+  type MetricNumericResult = Float
+
   implicit val anyDecoder: Decoder[Any] = Decoder.instance(cursor => {
     cursor.focus match {
       case Some(x) => Right(x)
