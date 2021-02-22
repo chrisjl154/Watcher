@@ -1,4 +1,4 @@
-{"name": "", "prometheusQueryString": "", "threshold": "100"}
-{"name": "", "prometheusQueryString": "istio_request{{{{{app=\"frontend\"}", "threshold": "100"}
-{"name": "", "prometheusQueryString": "istio_request_failure{app=\"f\"\"rontend\"}", "threshold": "20"}
-{"name": "", "prometheusQueryString": "istio_p99_latency{app=\"frontend\", destination=\"database\"}{}", "threshold": "10000"}
+{"name": "", "prometheusQueryString": "", "threshold": "100", "appName": "frontend"}
+{"name": "", "prometheusQueryString": "istio_request{{{{{app=\"frontend\"}", "threshold": "100", "appName": "frontend"}
+{"name": "", "prometheusQueryString": "istio_request_failure{app=\"f\"\"rontend\"}", "threshold": "20", "appName": "frontend"}
+{"name": "", "prometheusQueryString": "istio_p99_latency{app=\"frontend\", destination=\"database\"}{}", "threshold": "10000", "appName": "frontend"}

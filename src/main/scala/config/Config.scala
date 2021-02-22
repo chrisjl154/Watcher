@@ -4,7 +4,8 @@ case class Config(
     applicationMetricProcessingConfig: ApplicationMetricProcessingConfig,
     httpConfig: HttpConfig,
     prometheusConfig: PrometheusConfig,
-    targetDefinitions: TargetDefinitions
+    targetDefinitions: TargetDefinitions,
+    kafkaConfig: KafkaConfig
 )
 
 case class HttpConfig(maxConcurrentRequests: Int)
@@ -17,3 +18,9 @@ case class ApplicationMetricProcessingConfig(
 case class PrometheusConfig(host: String, port: Int, apiEndpoint: String)
 
 case class TargetDefinitions(source: String)
+
+case class KafkaConfig(
+    bootstrapServer: String,
+    consumerGroup: String,
+    anomalyTopic: String
+)

@@ -1,18 +1,24 @@
 package stream
 import anomaly.{AnomalyDetectionEngine, AnomalyMessage}
 import domain.{MetricTarget, MetricTargetAndResultWrapper}
-import cats.effect.{ContextShift, Async, Timer, IO, Sync}
+import cats.effect.{ContextShift, Async, Timer, ExitCode, IO, Sync}
 import cats.syntax._
 import cats.implicits._
-import config.{ApplicationMetricProcessingConfig, Config}
+import config.{ApplicationMetricProcessingConfig, Config, KafkaConfig}
 import fs2.Stream
+import fs2.kafka.{ProducerRecord, Serializer, ProducerSettings, ProducerRecords, KafkaProducer}
 import org.slf4j.{Logger, LoggerFactory}
 import web.PrometheusMetricClient
+import io.circe.parser._
+import io.circe.generic.auto._
+import io.circe.syntax._
 
+import java.util.UUID
 import scala.concurrent.duration._
 
 class PrometheusMetricWatchStream(
     streamConfig: ApplicationMetricProcessingConfig,
+    kafkaConfig: KafkaConfig,
     metricClient: PrometheusMetricClient,
     anomalyDetectionEngine: AnomalyDetectionEngine
 )(implicit
@@ -21,26 +27,38 @@ class PrometheusMetricWatchStream(
     sync: Sync[IO],
     async: Async[IO]
 ) extends MetricWatchStream {
-  val log: Logger =
+  private val log: Logger =
     LoggerFactory.getLogger(getClass.getSimpleName)
 
-  override def runForever(watchList: Seq[MetricTarget]): IO[Unit] =
-    prometheusStream(watchList).repeat
-      .metered(streamConfig.streamSleepTime.seconds)
-      .compile
-      .drain
+  private val producerSettings: ProducerSettings[IO, String, String] =
+    ProducerSettings(
+      keySerializer = Serializer[IO, String],
+      valueSerializer = Serializer[IO, String]
+    ).withBootstrapServers(
+      kafkaConfig.bootstrapServer
+    )
+
+  override def runForever(watchList: Seq[MetricTarget]): IO[ExitCode] =
+    prometheusStream(watchList).compile.drain.as(ExitCode.Success)
 
   private[stream] def prometheusStream(
       watchList: Seq[MetricTarget]
-  ): Stream[IO, Option[String]] =
-    Stream
-      .emits(watchList)
-      .covary[IO]
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(retrieveMetrics)
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(detectAnomalies)
-      .filter(_.isDefined)
-      .map(_.get)
-      .parEvalMapUnordered(streamConfig.streamParallelismMax)(notifyKafka)
+  ) =
+    KafkaProducer.stream(producerSettings).flatMap { producer =>
+      Stream
+        .emits(watchList)
+        .covary[IO]
+        .parEvalMapUnordered(streamConfig.streamParallelismMax)(retrieveMetrics)
+        .parEvalMapUnordered(streamConfig.streamParallelismMax)(detectAnomalies)
+        .filter(_.isDefined)
+        .map(_.get)
+        .map(notifyKafka)
+        .evalMap { record =>
+          producer.produce(record).flatten
+        }
+        .repeat
+        .metered(streamConfig.streamSleepTime.seconds)
+    }
 
   private[stream] def retrieveMetrics(
       target: MetricTarget
@@ -70,8 +88,10 @@ class PrometheusMetricWatchStream(
 
   private[stream] def notifyKafka(
       message: AnomalyMessage
-  ): IO[Option[String]] =
-    IO(Option("NYI"))
+  ): ProducerRecords[String, String, Unit] =
+    ProducerRecords.one[String, String](
+      ProducerRecord(kafkaConfig.anomalyTopic, UUID.randomUUID().toString, message.asJson.toString)
+    )
 }
 
 object PrometheusMetricWatchStream {
@@ -87,6 +107,7 @@ object PrometheusMetricWatchStream {
   ): PrometheusMetricWatchStream =
     new PrometheusMetricWatchStream(
       config.applicationMetricProcessingConfig,
+      config.kafkaConfig,
       metricClient,
       anomalyDetectionEngine
     )

@@ -16,7 +16,13 @@ class AnomalyDetectionEngine {
       log.info(
         s"Anomaly detected for \'${target.name}\'. Threshold: \'${target.threshold}\' Result: \'${metricResult}\'"
       )
-      Some(AnomalyMessage())
+      Some(
+        AnomalyMessage(
+          target.appName,
+          metricResult.toString,
+          AnomalyMessageMetaData(System.currentTimeMillis.toString)
+        )
+      )
     } else None
   }
 }

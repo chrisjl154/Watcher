@@ -6,6 +6,7 @@ import scala.concurrent.ExecutionContext
 import config.{
   TargetDefinitions,
   PrometheusConfig,
+  KafkaConfig,
   Config,
   HttpConfig,
   ApplicationMetricProcessingConfig
@@ -50,7 +51,10 @@ object TestSupport {
   ): Unit =
     f(AnomalyDetectionEngine())
 
-  def withConfig()(f: Config => Unit): Unit = {
+  def withConfig(
+      kafkaConfig: KafkaConfig =
+        KafkaConfig("127.0.0.1:9092", "TestGroup", "anomalies_v1")
+  )(f: Config => Unit): Unit = {
     val streamParallelismMax = 10
     val streamSleepTime = 10
     val applicationMetricProcessingConfig =
@@ -73,7 +77,8 @@ object TestSupport {
         applicationMetricProcessingConfig,
         httpConfig,
         prometheusConfig,
-        targetConfig
+        targetConfig,
+        kafkaConfig
       )
     )
   }
@@ -91,6 +96,15 @@ object TestSupport {
   def loadValidTargetsNoAnomaly: Seq[MetricTarget] =
     Source
       .fromResource("metricTargetsValidNoAnomalies.json")
+      .getLines()
+      .map(decode[MetricTarget](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadValidTargetsAllAnomaly: Seq[MetricTarget] =
+    Source
+      .fromResource("metricTargetsValidAllAnomaly.json")
       .getLines()
       .map(decode[MetricTarget](_))
       .toSeq
@@ -129,6 +143,15 @@ object TestSupport {
       .fromResource("metricTargetCandidatesInvalid.json")
       .getLines()
       .map(decode[MetricTargetCandidate](_))
+      .toSeq
+      .filter(_.isRight)
+      .map(item => item.toOption.get)
+
+  def loadMetricTargetCandidatesValidNonExistentInPrometheus: Seq[MetricTarget] =
+    Source
+      .fromResource("metricTargetsValidNonExistent.json")
+      .getLines()
+      .map(decode[MetricTarget](_))
       .toSeq
       .filter(_.isRight)
       .map(item => item.toOption.get)

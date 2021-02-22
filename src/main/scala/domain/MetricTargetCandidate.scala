@@ -4,5 +4,6 @@ case class MetricTargetCandidate(
     proposedName: String,
     proposedPrometheusQueryString: String,
     proposedThreshold: String,
-    description: String
+    description: String,
+    proposedAppName: String
 )

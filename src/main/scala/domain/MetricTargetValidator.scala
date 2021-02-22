@@ -18,12 +18,14 @@ object MetricTargetValidator {
   def apply(
       name: String,
       prometheusQueryString: String,
-      threshold: String
+      threshold: String,
+      appName: String
   ): ValidationResult[MetricTarget] =
     (
       validateQueryName(name),
       validateQueryString(prometheusQueryString),
-      validateThreshold(threshold)
+      validateThreshold(threshold),
+      validateApplicationName(appName)
     ).mapN(MetricTarget)
 
   private def validateQueryString(query: String): ValidationResult[String] =
@@ -34,6 +36,10 @@ object MetricTargetValidator {
 
   private def validateThreshold(threshold: String): ValidationResult[String] =
     threshold.validNec
+
+  private def validateApplicationName(
+      appName: String
+  ): ValidationResult[String] = appName.validNec
 
   def validateAll(
       targets: Seq[MetricTargetCandidate]
@@ -46,7 +52,8 @@ object MetricTargetValidator {
             MetricTargetValidator(
               candidate.proposedName,
               candidate.proposedPrometheusQueryString,
-              candidate.proposedThreshold
+              candidate.proposedThreshold,
+              candidate.proposedAppName
             )
           )
         )

@@ -4,8 +4,9 @@ import anomaly.AnomalyDetectionEngine
 import config.Config
 import cats.syntax._
 import cats.implicits._
-import cats.effect.{Timer, IO, ExitCode, ContextShift}
+import cats.effect.{ContextShift, Resource, Timer, ExitCode, IO}
 import domain.MetricTargetValidator
+import fs2.kafka.{KafkaProducer, ProducerSettings, ProducerResource}
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.slf4j.{Logger, LoggerFactory}
@@ -33,13 +34,14 @@ class Application()(implicit
         targets <-
           HardcodedTargetLoader.loadAll(config.targetDefinitions.source)
         validatedTargets = MetricTargetValidator.validateAll(targets)
-        _ = log.info(s"Validated ${validatedTargets.length}/${targets.length} supplied targets")
+        _ = log.info(
+          s"Validated ${validatedTargets.length}/${targets.length} supplied targets"
+        )
         res <- PrometheusMetricWatchStream(
           config,
           HttpPrometheusPrometheusMetricClient(config.prometheusConfig, client),
           AnomalyDetectionEngine()
         ).runForever(validatedTargets)
-          .map(_ => ExitCode.Success) //TODO: Properly handle fatal errors
       } yield res
     }
   }
