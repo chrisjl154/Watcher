@@ -1,3 +1,3 @@
 package domain
 
-case class MetricTarget(name: String, prometheusQueryString: String, threshold: String)
+case class MetricTarget(name: String, prometheusQueryString: String, threshold: String, appName: String)

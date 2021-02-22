@@ -38,7 +38,8 @@ object Dependencies {
     val http4sVersion = "0.21.16"
     val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
     val http4sBlaze = "org.http4s" %% "http4s-blaze-server" % http4sVersion
-    val http4sBlazeClient = "org.http4s" %% "http4s-blaze-client" % http4sVersion
+    val http4sBlazeClient =
+      "org.http4s" %% "http4s-blaze-client" % http4sVersion
   }
 
   object Doobie {
@@ -57,4 +58,12 @@ object Dependencies {
     val fs2Kafka = "com.github.fd4s" %% "fs2-kafka" % fs2KafkaVersion
   }
 
+  object TestContainers {
+    val testContainerVersion = "0.39.1"
+    val testContainersScalaTest =
+      "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainerVersion % "test"
+    val testContainerKafka =
+      "com.dimafeng" %% "testcontainers-scala-kafka" % testContainerVersion % "test"
+
+  }
 }

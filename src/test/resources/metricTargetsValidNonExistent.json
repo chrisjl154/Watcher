@@ -1,0 +1,4 @@
+{"name": "__QueryOne", "prometheusQueryString": "count(something)", "threshold": "0.1", "appName": "frontend"}
+{"name": "__QueryTwo", "prometheusQueryString": "sum(something)", "threshold": "0.001", "appName": "frontend"}
+{"name": "__QueryThree", "prometheusQueryString": "istio_request{app=\"frontend\"}", "threshold": "0.001", "appName": "frontend"}
+{"name": "__QueryFour", "prometheusQueryString": "istio_request_failure{app=\"frontend\"}", "threshold": "0.2", "appName": "frontend"}
