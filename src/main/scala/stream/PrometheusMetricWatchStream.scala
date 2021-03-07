@@ -48,8 +48,8 @@ class PrometheusMetricWatchStream(
       Stream
         .emits(watchList)
         .covary[IO]
-        .parEvalMapUnordered(streamConfig.streamParallelismMax)(retrieveMetrics)
-        .parEvalMapUnordered(streamConfig.streamParallelismMax)(detectAnomalies)
+        .mapAsync(streamConfig.streamParallelismMax)(retrieveMetrics)
+        .mapAsync(streamConfig.streamParallelismMax)(detectAnomalies)
         .filter(_.isDefined)
         .map(_.get)
         .map(notifyKafka)
