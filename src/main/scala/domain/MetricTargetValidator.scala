@@ -19,14 +19,22 @@ object MetricTargetValidator {
       name: String,
       prometheusQueryString: String,
       threshold: String,
-      appName: String
+      appName: String,
+      function: String
   ): ValidationResult[MetricTarget] =
     (
       validateQueryName(name),
       validateQueryString(prometheusQueryString),
       validateThreshold(threshold),
-      validateApplicationName(appName)
+      validateApplicationName(appName),
+      validateFunctionString(function)
     ).mapN(MetricTarget)
+
+  private def validateFunctionString(
+      function: String
+  ): ValidationResult[String] =
+    if (function.equals("in") || function.equals("out")) function.validNec
+    else InvalidFunctionValue.invalidNec
 
   private def validateQueryString(query: String): ValidationResult[String] =
     if (query.isEmpty) InvalidQueryString.invalidNec else query.validNec
@@ -53,7 +61,8 @@ object MetricTargetValidator {
               candidate.proposedName,
               candidate.proposedPrometheusQueryString,
               candidate.proposedThreshold,
-              candidate.proposedAppName
+              candidate.proposedAppName,
+              candidate.function
             )
           )
         )
@@ -97,4 +106,8 @@ case object InvalidQueryString extends MetricTargetValidationError {
 
 case object InvalidQueryName extends MetricTargetValidationError {
   override def error: String = "An invalid query name was specified"
+}
+case object InvalidFunctionValue extends MetricTargetValidationError {
+  override def error: String =
+    "An invalid function value was specified. Can be \'in\' or \'out\'"
 }
