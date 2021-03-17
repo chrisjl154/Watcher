@@ -31,7 +31,8 @@ class MetricTargetValidatorSpec
               candidate.proposedName,
               candidate.proposedPrometheusQueryString,
               candidate.proposedThreshold,
-              candidate.proposedAppName
+              candidate.proposedAppName,
+              candidate.function
             )
           )
 
@@ -52,7 +53,8 @@ class MetricTargetValidatorSpec
             invalidCandidate.proposedName,
             invalidCandidate.proposedPrometheusQueryString,
             invalidCandidate.proposedThreshold,
-            invalidCandidate.proposedAppName
+            invalidCandidate.proposedAppName,
+            invalidCandidate.function
           )
 
         val failuresList: List[MetricTargetValidationError] =
@@ -72,7 +74,8 @@ class MetricTargetValidatorSpec
             invalidCandidate.proposedName,
             invalidCandidate.proposedPrometheusQueryString,
             invalidCandidate.proposedThreshold,
-            invalidCandidate.proposedAppName
+            invalidCandidate.proposedAppName,
+            invalidCandidate.function
           )
 
         val failuresList: List[MetricTargetValidationError] =
@@ -95,7 +98,8 @@ object MetricTargetValidatorSpec {
       "",
       "20",
       "An invalid query string which is empty",
-      "FrontEnd"
+      "FrontEnd",
+      "out"
     )
 
   val candidateInvalidName: MetricTargetCandidate =
@@ -104,6 +108,7 @@ object MetricTargetValidatorSpec {
       "istio_request_total{app=\"adservice\"}",
       "20",
       "An invalid name",
-      "AdService"
+      "AdService",
+      "in"
     )
 }
