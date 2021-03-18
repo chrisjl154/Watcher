@@ -6,7 +6,13 @@ import cats.syntax._
 import cats.implicits._
 import config.{ApplicationMetricProcessingConfig, Config, KafkaConfig}
 import fs2.Stream
-import fs2.kafka.{ProducerRecord, Serializer, ProducerSettings, ProducerRecords, KafkaProducer}
+import fs2.kafka.{
+  ProducerRecord,
+  Serializer,
+  ProducerSettings,
+  ProducerRecords,
+  KafkaProducer
+}
 import org.slf4j.{Logger, LoggerFactory}
 import web.PrometheusMetricClient
 import io.circe.parser._
@@ -45,19 +51,22 @@ class PrometheusMetricWatchStream(
       watchList: Seq[MetricTarget]
   ) =
     KafkaProducer.stream(producerSettings).flatMap { producer =>
-      Stream
-        .emits(watchList)
-        .covary[IO]
-        .mapAsync(streamConfig.streamParallelismMax)(retrieveMetrics)
-        .mapAsync(streamConfig.streamParallelismMax)(detectAnomalies)
-        .filter(_.isDefined)
-        .map(_.get)
-        .map(notifyKafka)
-        .evalMap { record =>
-          producer.produce(record).flatten
-        }
-        .repeat
-        .metered(streamConfig.streamSleepTime.seconds)
+      (Stream
+        .awakeDelay[IO](streamConfig.streamSleepTime.seconds) >>
+        Stream
+          .emits(watchList)
+          .covary[IO]
+          .parEvalMapUnordered(streamConfig.streamParallelismMax)(
+            retrieveMetrics
+          )
+          .parEvalMapUnordered(streamConfig.streamParallelismMax)(
+            detectAnomalies
+          )
+          .unNone
+          .map(generateKafkaMessage)
+          .parEvalMapUnordered(streamConfig.streamParallelismMax) { record =>
+            producer.produce(record).flatten
+          }).repeat
     }
 
   private[stream] def retrieveMetrics(
@@ -86,11 +95,15 @@ class PrometheusMetricWatchStream(
       }
     }
 
-  private[stream] def notifyKafka(
+  private[stream] def generateKafkaMessage(
       message: AnomalyMessage
   ): ProducerRecords[String, String, Unit] =
     ProducerRecords.one[String, String](
-      ProducerRecord(kafkaConfig.anomalyTopic, UUID.randomUUID().toString, message.asJson.toString)
+      ProducerRecord(
+        kafkaConfig.anomalyTopic,
+        UUID.randomUUID().toString,
+        message.asJson.toString
+      )
     )
 }
 
