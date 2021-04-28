@@ -25,6 +25,10 @@ class Application()(implicit
 ) {
   private val log: Logger = LoggerFactory.getLogger(getClass.getSimpleName)
 
+  /**
+   * Load targets and service definitions and Execute the application
+   * @return
+   */
   def execute(): IO[ExitCode] = {
     val config = loadConfig
     withBlazeClient(
@@ -46,6 +50,11 @@ class Application()(implicit
     }
   }
 
+  /**
+   * Creates a thread pool for HTTP requests
+   * @param maxConcurrentRequests
+   * @return
+   */
   private def httpExecutionContext(
       maxConcurrentRequests: Int
   ): ExecutionContextExecutor =
@@ -53,6 +62,12 @@ class Application()(implicit
       Executors.newFixedThreadPool(maxConcurrentRequests)
     )
 
+  /**
+   * Execute a given function in the context of a Blaze client
+   * @param executionContext A thread pool for HTTP requests
+   * @param f A function to execute
+   * @return
+   */
   private def withBlazeClient(
       executionContext: ExecutionContext
   )(f: Client[IO] => IO[ExitCode]): IO[ExitCode] =

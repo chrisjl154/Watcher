@@ -24,10 +24,15 @@ class HttpPrometheusPrometheusMetricClient(
       HttpPrometheusPrometheusMetricClient.getClass.getName
     )
 
+  /**
+   * Retrieves a metric value using a query from the metric store
+   * @param query
+   * @return
+   */
   override def getMetricValue(
       query: MetricTarget
   ): EitherT[IO, String, PrometheusQueryResult] =
-    EitherT(
+    EitherT( //Wrap the results in a side-effect capturing Either
       blazeClient
         .expect[String](
           generateHttp4sUri(
@@ -39,14 +44,23 @@ class HttpPrometheusPrometheusMetricClient(
             )
           )
         )
-        .redeemWith(
+        .redeemWith( //Handle errors using redeem
           ex =>
             IO(
               Left(ex.getMessage)
-            ), //TODO: This feels messy, is there a way to clean this up?
-          res => IO(decodePrometheusResponse(res))
+            ),
+          res => IO(decodePrometheusResponse(res)) //Wrap the decided response in an IO
         )
     )
+
+  /**
+   * We need to manually construct the URI for Http4S due to some changes in the scheme etc we need to add
+   * @param host
+   * @param port
+   * @param apiEndpoint
+   * @param queryString
+   * @return
+   */
   private def generateHttp4sUri(
       host: String,
       port: Int,
@@ -63,13 +77,19 @@ class HttpPrometheusPrometheusMetricClient(
         )
       ),
       apiEndpoint,
-      Query.fromMap(queryString),
+      Query.fromMap(queryString), //generate a query string using the map
       None
     )
+
+  /**
+   * Decodes a JSON response from the HTTP API
+   * @param resp
+   * @return
+   */
   private def decodePrometheusResponse(
       resp: String
   ): Either[String, PrometheusQueryResult] =
-    decode(resp)(prometheusQueryResultDecoder).leftMap(_.getMessage)
+    decode(resp)(prometheusQueryResultDecoder).leftMap(_.getMessage) //Map errors in an Either
 }
 
 object HttpPrometheusPrometheusMetricClient {

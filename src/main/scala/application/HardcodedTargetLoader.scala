@@ -9,6 +9,11 @@ import scala.io.Source
 object HardcodedTargetLoader extends TargetLoader {
   private val log: Logger = LoggerFactory.getLogger(getClass.getSimpleName)
 
+  /**
+   * Loads targets from a resource
+   * @param source Path to the resource
+   * @return
+   */
   override def loadAll(source: String): IO[Seq[MetricTargetCandidate]] =
     IO {
       Source

@@ -6,13 +6,7 @@ import cats.syntax._
 import cats.implicits._
 import config.{ApplicationMetricProcessingConfig, Config, KafkaConfig}
 import fs2.Stream
-import fs2.kafka.{
-  ProducerRecord,
-  Serializer,
-  ProducerSettings,
-  ProducerRecords,
-  KafkaProducer
-}
+import fs2.kafka.{ProducerRecord, Serializer, ProducerResult, ProducerSettings, ProducerRecords, KafkaProducer}
 import org.slf4j.{Logger, LoggerFactory}
 import web.PrometheusMetricClient
 import io.circe.parser._
@@ -44,31 +38,42 @@ class PrometheusMetricWatchStream(
       kafkaConfig.bootstrapServer
     )
 
+  /**
+   * Runs the steeam forever
+   * @param watchList the list of targets to watch
+   * @return
+   */
   override def runForever(watchList: Seq[MetricTarget]): IO[ExitCode] =
     prometheusStream(watchList).compile.drain.as(ExitCode.Success)
 
+  /**
+   * Defines the stream to run with parallelism
+   * @param watchList the list of targets to watch
+   * @return
+   */
   private[stream] def prometheusStream(
       watchList: Seq[MetricTarget]
-  ) =
+  ): Stream[IO, ProducerResult[String, String, Unit]] =
     KafkaProducer.stream(producerSettings).flatMap { producer =>
       (Stream
-        .awakeDelay[IO](streamConfig.streamSleepTime.seconds) >>
+        .awakeDelay[IO](streamConfig.streamSleepTime.seconds) >> //Ensure the stream sleeps for n seconds between runs
         Stream
           .emits(watchList)
           .covary[IO]
-          .parEvalMapUnordered(streamConfig.streamParallelismMax)(
-            retrieveMetrics
-          )
-          .parEvalMapUnordered(streamConfig.streamParallelismMax)(
-            detectAnomalies
-          )
-          .unNone
+          .parEvalMapUnordered(streamConfig.streamParallelismMax)(retrieveMetrics)
+          .parEvalMapUnordered(streamConfig.streamParallelismMax)(detectAnomalies)
+          .unNone //Remove None's as they do not need to have a Kafka message generated
           .map(generateKafkaMessage)
           .parEvalMapUnordered(streamConfig.streamParallelismMax) { record =>
             producer.produce(record).flatten
           }).repeat
     }
 
+  /**
+   * Retrieves metrics using the provided query string in a case class from the metric store
+   * @param target The MetricTarget case class representing a target
+   * @return
+   */
   private[stream] def retrieveMetrics(
       target: MetricTarget
   ): IO[Option[MetricTargetAndResultWrapper]] = {
@@ -76,16 +81,22 @@ class PrometheusMetricWatchStream(
       .getMetricValue(target)
       .map { result =>
         val metricResult =
-          result.data.result.head.value.tail.head.toFloat //TODO: This is not safe. Need to find a workaround
+          result.data.result.head.value.tail.head.toFloat
         MetricTargetAndResultWrapper(target, metricResult)
       }
       .leftMap { err =>
         log.warn(s"Error retrieving metrics for \'${target.name}\': $err")
         err
       }
-      .toOption
-      .value
+      .toOption //Converts an Either to an option
+      .value //Extracts a value
   }
+
+  /**
+   * Uses the anomaly detection engine to determine if an anomaly has occured
+   * @param resOption
+   * @return
+   */
   private[stream] def detectAnomalies(
       resOption: Option[MetricTargetAndResultWrapper]
   ): IO[Option[AnomalyMessage]] =
@@ -95,13 +106,18 @@ class PrometheusMetricWatchStream(
       }
     }
 
+  /**
+   * Generates a Kafka message from an anomaly. Will contain data needed by upstream components as well as some metadata
+   * @param message
+   * @return
+   */
   private[stream] def generateKafkaMessage(
       message: AnomalyMessage
   ): ProducerRecords[String, String, Unit] =
     ProducerRecords.one[String, String](
       ProducerRecord(
         kafkaConfig.anomalyTopic,
-        UUID.randomUUID().toString,
+        UUID.randomUUID().toString, //Create a new UUID for this event
         message.asJson.toString
       )
     )

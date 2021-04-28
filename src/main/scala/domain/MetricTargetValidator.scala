@@ -49,9 +49,16 @@ object MetricTargetValidator {
       appName: String
   ): ValidationResult[String] = appName.validNec
 
+  /**
+   * Validate a list of tagets using the pre-defined validation rules
+   * @param targets
+   * @return
+   */
   def validateAll(
       targets: Seq[MetricTargetCandidate]
   ): Seq[MetricTarget] = {
+
+    //Validate targets and accumulate errors
     val validated =
       targets
         .map(candidate =>
@@ -84,6 +91,7 @@ object MetricTargetValidator {
         }
       }
 
+    //Return the validated targets
     for {
       validatedOptions <- successfulValidations.map(_.result.toOption)
       validatedItems = validatedOptions.get

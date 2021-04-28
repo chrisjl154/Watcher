@@ -12,10 +12,17 @@ class AnomalyDetectionEngine {
   private def scaleInCheck(res: Float, threshold: Float): Boolean =
     res < threshold
 
+  /**
+   * Determines if an anomaly has occured using the definitions provided in config files.
+   * @param target The service
+   * @param metricResult The metric retrieved from the metric store
+   * @return
+   */
   def detect(
       target: MetricTarget,
       metricResult: Float
   ): Option[AnomalyMessage] = {
+    //Prepare the check function
     val check: Option[Boolean] = target.function match {
       case "in" =>
         Option(scaleInCheck(metricResult, target.threshold.toFloat))
@@ -29,11 +36,13 @@ class AnomalyDetectionEngine {
       }
     }
 
+    // Determine whether the anomaly has occurred
     check match {
       case Some(checkFunction) => {
         if (checkFunction) {
           log.info(
-            s"Anomaly detected for \'${target.name}\'. Threshold: \'${target.threshold}\' Result: \'${metricResult}\' Function: \'${target.function}\'"
+            s"Anomaly detected for \'${target.name}\'. Threshold: \'${target.threshold}\' " +
+              s"Result: \'${metricResult}\' Function: \'${target.function}\'"
           )
           Option(
             AnomalyMessage(
